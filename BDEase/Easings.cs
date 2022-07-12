@@ -72,7 +72,7 @@ namespace BDEase
         public static float EaseInOutQuint(float x) => x < 0.5f ? 16f * Pow(x, 5f) : 1f - Pow(-2f * x + 2f, 5f) / 2f;
         public static float EaseInSine(float x) => 1f - Cos(HALF_PI * x);
         public static float EaseOutSine(float x) => Sin(HALF_PI * x);
-        public static float EaseInOutSine(float x) => -Cos(PI * x - 1) / 2f;
+        public static float EaseInOutSine(float x) => -(Cos(PI * x) - 1) / 2f;
         public static float EaseInExpo(float x) => x == 0f ? 0f : Pow(2f, 10f * x - 10f);
         public static float EaseOutExpo(float x) => x == 1f ? 1f : 1f - Pow(2f, -10f * x);
         public static float EaseInOutExpo(float x) => x switch

@@ -1,5 +1,4 @@
 using System;
-using System.Threading.Tasks;
 
 namespace BDEase
 {
@@ -19,6 +18,14 @@ namespace BDEase
             set = (T t) => value = t;
             return () => value;
         }
+
+        public static Action AndAlso(this Action thiz, Action other) => () => { thiz(); other(); };
+        public static Action<T> AndAlso<T>(this Action<T> thiz, Action other) => (t) => { thiz(t); other(); };
+        public static Action<T> AndAlso<T>(this Action<T> thiz, Action<T> other) => (t) => { thiz(t); other(t); };
+        public static Func<T> AndAlso<T>(this Func<T> thiz, Action other) => () => { T ret = thiz(); other(); return ret; };
+        public static Func<T1, T2> AndAlso<T1, T2>(this Func<T1, T2> thiz, Action other) => (T1 t) => { T2 ret = thiz(t); other(); return ret; };
+        public static Func<T1, T2> AndAlso<T1, T2>(this Func<T1, T2> thiz, Action<T1> other) => (T1 t) => { T2 ret = thiz(t); other(t); return ret; };
+
         /// Creates a function which takes individual delta seconds and calls action(lerp(start, end, elapsed)) until elapsed > duration.
         public static Func<float, bool> Lerped<T>(this IArith<T> thiz, Action<T> action, float duration, T start, T end, Func<float, float> ease = default, Func<bool> isCanceled = default)
         {

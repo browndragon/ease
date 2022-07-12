@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using UnityEngine;
 
 namespace BDEase
@@ -20,12 +21,12 @@ namespace BDEase
             return Time.deltaTime;
         }
         /// Turns `eachTick` into a coroutine executed on each... tick...
-        public static IEnumerator GetCoroutine(this YieldInstruction thiz, Func<float, bool> eachTick)
+        public static IEnumerable GetCoroutine(this YieldInstruction thiz, Func<float, bool> eachTick)
         {
             do { yield return thiz; } while (eachTick(thiz.GetDelta()));
         }
         /// Turns `eachTick` into a coroutine executed on each... tick...
-        public static IEnumerator GetCoroutine(this YieldInstruction thiz, Func<bool> eachTick)
+        public static IEnumerable GetCoroutine(this YieldInstruction thiz, Func<bool> eachTick)
         {
             do { yield return thiz; } while (eachTick());
         }

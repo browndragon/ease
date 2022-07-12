@@ -42,7 +42,8 @@ namespace BDEase
         }
         public static T Negate<T>(this IArith<T> thiz, T a) => thiz.Scale(-1f, a);
         public static T Difference<T>(this IArith<T> thiz, T a, T b) => thiz.Add(a, thiz.Negate(b));
-        public static T Lerp<T>(this IArith<T> thiz, T a, T b, float ratio) => thiz.Add(a, thiz.Scale(Clamp01(ratio), thiz.Difference(b, a)));
+        public static T LerpUnclamped<T>(this IArith<T> thiz, T a, T b, float ratio) => thiz.Add(a, thiz.Scale(ratio, thiz.Difference(b, a)));
+        public static T Lerp<T>(this IArith<T> thiz, T a, T b, float ratio) => thiz.LerpUnclamped(a, b, Clamp01(ratio));
 
         #endregion
 
