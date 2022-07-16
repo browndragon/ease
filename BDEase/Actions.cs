@@ -2,47 +2,50 @@ using System;
 
 namespace BDEase
 {
+    /// Pipe actions: Creates size(1) get/set pairs to pass values around.
+    /// This is most useful for quickly creating cancellation tokens.
     public static class Actions
     {
-        /// Creates a Size(1) pipe to detect whether the out-returned Action has been called.
-        public static Func<bool> MakeSignalPair(out Action set)
-        {
-            bool has = false;
-            set = () => has = true;
-            return () => has;
-        }
-        /// As `MakeSignalPair()` but the action can pass information.
-        public static Func<T> MakeSignalPair<T>(out Action<T> set)
-        {
-            T value = default;
-            set = (T t) => value = t;
-            return () => value;
-        }
+        /// Calls underlying `thiz` with `transform(input)`.
+        public static Action<TNew> AsAction<TOld, TNew>(this Action<TOld> thiz, Func<TNew, TOld> transform)
+        => (tnew) => thiz(transform(tnew));
+        /// Calls underlying `thiz` with `value`.
+        public static Action AsAction<T>(this Action<T> thiz, T value)
+        => () => thiz(value);
+        /// Calls underlying `thiz` with `true`.
+        public static Action AsAction(this Action<bool> thiz) => thiz.AsAction(true);
 
-        public static Action AndAlso(this Action thiz, Action other) => () => { thiz(); other(); };
-        public static Action<T> AndAlso<T>(this Action<T> thiz, Action other) => (t) => { thiz(t); other(); };
-        public static Action<T> AndAlso<T>(this Action<T> thiz, Action<T> other) => (t) => { thiz(t); other(t); };
-        public static Func<T> AndAlso<T>(this Func<T> thiz, Action other) => () => { T ret = thiz(); other(); return ret; };
-        public static Func<T1, T2> AndAlso<T1, T2>(this Func<T1, T2> thiz, Action other) => (T1 t) => { T2 ret = thiz(t); other(); return ret; };
-        public static Func<T1, T2> AndAlso<T1, T2>(this Func<T1, T2> thiz, Action<T1> other) => (T1 t) => { T2 ret = thiz(t); other(t); return ret; };
+        /// Transform outputs on return (on each call).
+        public static Func<TNew> WithOutputs<TOld, TNew>(this Func<TOld> thiz, Func<TOld, TNew> transform)
+        => () => transform(thiz());
+        /// Transform outputs on return (on each call).
+        public static Func<TNew> WithOutputs<TNew>(this Func<bool> thiz, TNew onTrue, TNew onFalse = default)
+        => () => thiz() ? onTrue : onFalse;
 
-        /// Creates a function which takes individual delta seconds and calls action(lerp(start, end, elapsed)) until elapsed > duration.
-        public static Func<float, bool> Lerped<T>(this IArith<T> thiz, Action<T> action, float duration, T start, T end, Func<float, float> ease = default, Func<bool> isCanceled = default)
+        /// Transforms a function(input, prev)=> output into a pair (set(input),get()=>output=prev=func(input, prev)).
+        /// Operation performed on Set (gets are nonmutating.)
+        /// (this happens to return the setter & outparam the getter; see MakeGetter for the other of the pair).
+        /// This also serves as a cache of the previous value.
+        public static Action<TIn> MakeSetter<TIn, TOut>(this Func<TIn, TOut, TOut> thiz, out Func<TOut> getter, TOut initial = default)
         {
-            ease ??= Easings.Linear;
-            float elapsed = 0f;
-            return (f) =>
-            {
-                if (isCanceled != null && isCanceled()) return false;
-                if (elapsed >= duration)
-                {
-                    action(thiz.Lerp(start, end, ease(1f)));
-                    return false;
-                }
-                action(thiz.Lerp(start, end, ease(elapsed / duration)));
-                elapsed += f;
-                return true;
-            };
+            TOut has = initial;
+            getter = () => has;
+            return (tin) => has = thiz(tin, has);
+        }
+        /// As MakeSetter but returns/outparams the other of the pair.
+        public static Func<TOut> MakeGetter<TIn, TOut>(this Func<TIn, TOut, TOut> thiz, out Action<TIn> setter, TOut initial = default)
+        {
+            setter = thiz.MakeSetter(out var getter, initial);
+            return getter;
+        }
+        /// As MakeSetter but the transforming function ignores the previous value.
+        public static Action<TIn> MakeSetter<TIn, TOut>(this Func<TIn, TOut> thiz, out Func<TOut> getter, TOut initial = default)
+        => ((Func<TIn, TOut, TOut>)((tin, _) => thiz(tin))).MakeSetter(out getter, initial);
+        /// As MakeSetter but returns/outparams the other of the pair.
+        public static Func<TOut> MakeGetter<TIn, TOut>(this Func<TIn, TOut> thiz, out Action<TIn> setter, TOut initial = default)
+        {
+            setter = thiz.MakeSetter(out var getter, initial);
+            return getter;
         }
     }
 }

@@ -2,12 +2,123 @@ using System;
 
 namespace BDEase
 {
+    using static Arith;
+    /// An ease maps [0f,1f]->[0f-delta,1f+delta] (sometimes they might squeak outside of the range).
     // https://github.com/ai/easings.net/blob/master/src/easings/easingsFunctions.ts
     public static class Easings
     {
-        const float PI = (float)Math.PI;
-        const float TAU = 2 * PI;
-        const float HALF_PI = PI / 2f;
+        public enum Ease
+        {
+            Linear = default,
+            InQuad,
+            OutQuad,
+            InOutQuad,
+            InCubic,
+            OutCubic,
+            InOutCubic,
+            InQuart,
+            OutQuart,
+            InOutQuart,
+            InQuint,
+            OutQuint,
+            InOutQuint,
+            InSine,
+            OutSine,
+            InOutSine,
+            InExpo,
+            OutExpo,
+            InOutExpo,
+            InCirc,
+            OutCirc,
+            InOutCirc,
+            InBack,
+            OutBack,
+            InOutBack,
+            InElastic,
+            OutElastic,
+            InOutElastic,
+            InBounce,
+            OutBounce,
+            InOutBounce
+        }
+
+        public static float Apply(this Ease thiz, float @in) => thiz switch
+        {
+            Ease.Linear => EaseLinear(@in),
+            Ease.InQuad => EaseInQuad(@in),
+            Ease.OutQuad => EaseOutQuad(@in),
+            Ease.InOutQuad => EaseInOutQuad(@in),
+            Ease.InCubic => EaseInCubic(@in),
+            Ease.OutCubic => EaseOutCubic(@in),
+            Ease.InOutCubic => EaseInOutCubic(@in),
+            Ease.InQuart => EaseInQuart(@in),
+            Ease.OutQuart => EaseOutQuart(@in),
+            Ease.InOutQuart => EaseInOutQuart(@in),
+            Ease.InQuint => EaseInQuint(@in),
+            Ease.OutQuint => EaseOutQuint(@in),
+            Ease.InOutQuint => EaseInOutQuint(@in),
+            Ease.InSine => EaseInSine(@in),
+            Ease.OutSine => EaseOutSine(@in),
+            Ease.InOutSine => EaseInOutSine(@in),
+            Ease.InExpo => EaseInExpo(@in),
+            Ease.OutExpo => EaseOutExpo(@in),
+            Ease.InOutExpo => EaseInOutExpo(@in),
+            Ease.InCirc => EaseInCirc(@in),
+            Ease.OutCirc => EaseOutCirc(@in),
+            Ease.InOutCirc => EaseInOutCirc(@in),
+            Ease.InBack => EaseInBack(@in),
+            Ease.OutBack => EaseOutBack(@in),
+            Ease.InOutBack => EaseInOutBack(@in),
+            Ease.InElastic => EaseInElastic(@in),
+            Ease.OutElastic => EaseOutElastic(@in),
+            Ease.InOutElastic => EaseInOutElastic(@in),
+            Ease.InBounce => EaseInBounce(@in),
+            Ease.OutBounce => EaseOutBounce(@in),
+            Ease.InOutBounce => EaseInOutBounce(@in),
+            _ => throw new NotImplementedException($"Unrecognized {thiz}"),
+        };
+        public static float ClampInvoke(this Func<float, float> thiz, float value)
+        {
+            value = Clamp01(value);
+            value = thiz?.Invoke(value) ?? value;
+            return value;
+        }
+
+        public static class FuncCache
+        {
+            public static readonly Func<float, float> Linear = EaseLinear;
+            public static readonly Func<float, float> InQuad = EaseInQuad;
+            public static readonly Func<float, float> OutQuad = EaseOutQuad;
+            public static readonly Func<float, float> InOutQuad = EaseInOutQuad;
+            public static readonly Func<float, float> InCubic = EaseInCubic;
+            public static readonly Func<float, float> OutCubic = EaseOutCubic;
+            public static readonly Func<float, float> InOutCubic = EaseInOutCubic;
+            public static readonly Func<float, float> InQuart = EaseInQuart;
+            public static readonly Func<float, float> OutQuart = EaseOutQuart;
+            public static readonly Func<float, float> InOutQuart = EaseInOutQuart;
+            public static readonly Func<float, float> InQuint = EaseInQuint;
+            public static readonly Func<float, float> OutQuint = EaseOutQuint;
+            public static readonly Func<float, float> InOutQuint = EaseInOutQuint;
+            public static readonly Func<float, float> InSine = EaseInSine;
+            public static readonly Func<float, float> OutSine = EaseOutSine;
+            public static readonly Func<float, float> InOutSine = EaseInOutSine;
+            public static readonly Func<float, float> InExpo = EaseInExpo;
+            public static readonly Func<float, float> OutExpo = EaseOutExpo;
+            public static readonly Func<float, float> InOutExpo = EaseInOutExpo;
+            public static readonly Func<float, float> InCirc = EaseInCirc;
+            public static readonly Func<float, float> OutCirc = EaseOutCirc;
+            public static readonly Func<float, float> InOutCirc = EaseInOutCirc;
+            public static readonly Func<float, float> InBack = EaseInBack;
+            public static readonly Func<float, float> OutBack = EaseOutBack;
+            public static readonly Func<float, float> InOutBack = EaseInOutBack;
+            public static readonly Func<float, float> InElastic = EaseInElastic;
+            public static readonly Func<float, float> OutElastic = EaseOutElastic;
+            public static readonly Func<float, float> InOutElastic = EaseInOutElastic;
+            public static readonly Func<float, float> InBounce = EaseInBounce;
+            public static readonly Func<float, float> OutBounce = EaseOutBounce;
+            public static readonly Func<float, float> InOutBounce = EaseInOutBounce;
+        }
+
         const float c1 = 1.70158f;
         const float c2 = c1 * 1.525f;
         const float c3 = c1 + 1;
@@ -17,18 +128,15 @@ namespace BDEase
         /// Flips X around x=.5; good for "yoyo".
         public static Func<float, float> FlipX(Func<float, float> ease = default)
         {
-            ease ??= Linear;
+            ease ??= EaseLinear;
             return (x) => ease(1 - x);
         }
         /// Flips Y around y=.5; good for quick & dirty switch ease in<->ease out.
         public static Func<float, float> FlipY(Func<float, float> ease = default)
         {
-            ease ??= Linear;
+            ease ??= EaseLinear;
             return (x) => 1 - ease(x);
         }
-
-        /// AKA identity, etc.
-        public static float Linear(float x) => x;
 
         static float BounceOut(float x)
         {
@@ -53,11 +161,8 @@ namespace BDEase
             }
         }
 
-        static float Pow(float x, float y) => (float)Math.Pow(x, y);
-        static float Cos(float x) => (float)Math.Cos(x);
-        static float Sin(float x) => (float)Math.Sin(x);
-        static float Sqrt(float x) => (float)Math.Sqrt(x);
-
+        /// AKA identity, etc.
+        public static float EaseLinear(float x) => x;
         public static float EaseInQuad(float x) => x * x;
         public static float EaseOutQuad(float x) => 1 - Pow(1 - x, 2);
         public static float EaseInOutQuad(float x) => x < 0.5f ? 2 * x * x : 1 - Pow(-2 * x + 2, 2) / 2;
