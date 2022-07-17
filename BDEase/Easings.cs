@@ -3,11 +3,17 @@ using System;
 namespace BDEase
 {
     using static Arith;
-    /// An ease maps [0f,1f]->[0f-delta,1f+delta] (sometimes they might squeak outside of the range).
-    // https://github.com/ai/easings.net/blob/master/src/easings/easingsFunctions.ts
+    /// An Ease. maps [0f,1f]->[0f-delta,1f+delta] (sometimes they might squeak outside of the range).
     public static class Easings
     {
-        public enum Ease
+        public static float ClampInvoke(this Func<float, float> thiz, float value)
+        {
+            value = Clamp01(value);
+            value = thiz?.Invoke(value) ?? value;
+            return value;
+        }
+
+        public enum Enum
         {
             Linear = default,
             InQuad,
@@ -42,187 +48,186 @@ namespace BDEase
             InOutBounce
         }
 
-        public static float Apply(this Ease thiz, float @in) => thiz switch
+        public static float Apply(this Enum thiz, float @in) => thiz switch
         {
-            Ease.Linear => EaseLinear(@in),
-            Ease.InQuad => EaseInQuad(@in),
-            Ease.OutQuad => EaseOutQuad(@in),
-            Ease.InOutQuad => EaseInOutQuad(@in),
-            Ease.InCubic => EaseInCubic(@in),
-            Ease.OutCubic => EaseOutCubic(@in),
-            Ease.InOutCubic => EaseInOutCubic(@in),
-            Ease.InQuart => EaseInQuart(@in),
-            Ease.OutQuart => EaseOutQuart(@in),
-            Ease.InOutQuart => EaseInOutQuart(@in),
-            Ease.InQuint => EaseInQuint(@in),
-            Ease.OutQuint => EaseOutQuint(@in),
-            Ease.InOutQuint => EaseInOutQuint(@in),
-            Ease.InSine => EaseInSine(@in),
-            Ease.OutSine => EaseOutSine(@in),
-            Ease.InOutSine => EaseInOutSine(@in),
-            Ease.InExpo => EaseInExpo(@in),
-            Ease.OutExpo => EaseOutExpo(@in),
-            Ease.InOutExpo => EaseInOutExpo(@in),
-            Ease.InCirc => EaseInCirc(@in),
-            Ease.OutCirc => EaseOutCirc(@in),
-            Ease.InOutCirc => EaseInOutCirc(@in),
-            Ease.InBack => EaseInBack(@in),
-            Ease.OutBack => EaseOutBack(@in),
-            Ease.InOutBack => EaseInOutBack(@in),
-            Ease.InElastic => EaseInElastic(@in),
-            Ease.OutElastic => EaseOutElastic(@in),
-            Ease.InOutElastic => EaseInOutElastic(@in),
-            Ease.InBounce => EaseInBounce(@in),
-            Ease.OutBounce => EaseOutBounce(@in),
-            Ease.InOutBounce => EaseInOutBounce(@in),
+            Enum.Linear => Ease.Linear(@in),
+            Enum.InQuad => Ease.InQuad(@in),
+            Enum.OutQuad => Ease.OutQuad(@in),
+            Enum.InOutQuad => Ease.InOutQuad(@in),
+            Enum.InCubic => Ease.InCubic(@in),
+            Enum.OutCubic => Ease.OutCubic(@in),
+            Enum.InOutCubic => Ease.InOutCubic(@in),
+            Enum.InQuart => Ease.InQuart(@in),
+            Enum.OutQuart => Ease.OutQuart(@in),
+            Enum.InOutQuart => Ease.InOutQuart(@in),
+            Enum.InQuint => Ease.InQuint(@in),
+            Enum.OutQuint => Ease.OutQuint(@in),
+            Enum.InOutQuint => Ease.InOutQuint(@in),
+            Enum.InSine => Ease.InSine(@in),
+            Enum.OutSine => Ease.OutSine(@in),
+            Enum.InOutSine => Ease.InOutSine(@in),
+            Enum.InExpo => Ease.InExpo(@in),
+            Enum.OutExpo => Ease.OutExpo(@in),
+            Enum.InOutExpo => Ease.InOutExpo(@in),
+            Enum.InCirc => Ease.InCirc(@in),
+            Enum.OutCirc => Ease.OutCirc(@in),
+            Enum.InOutCirc => Ease.InOutCirc(@in),
+            Enum.InBack => Ease.InBack(@in),
+            Enum.OutBack => Ease.OutBack(@in),
+            Enum.InOutBack => Ease.InOutBack(@in),
+            Enum.InElastic => Ease.InElastic(@in),
+            Enum.OutElastic => Ease.OutElastic(@in),
+            Enum.InOutElastic => Ease.InOutElastic(@in),
+            Enum.InBounce => Ease.InBounce(@in),
+            Enum.OutBounce => Ease.OutBounce(@in),
+            Enum.InOutBounce => Ease.InOutBounce(@in),
             _ => throw new NotImplementedException($"Unrecognized {thiz}"),
         };
-        public static float ClampInvoke(this Func<float, float> thiz, float value)
-        {
-            value = Clamp01(value);
-            value = thiz?.Invoke(value) ?? value;
-            return value;
-        }
 
-        public static class FuncCache
-        {
-            public static readonly Func<float, float> Linear = EaseLinear;
-            public static readonly Func<float, float> InQuad = EaseInQuad;
-            public static readonly Func<float, float> OutQuad = EaseOutQuad;
-            public static readonly Func<float, float> InOutQuad = EaseInOutQuad;
-            public static readonly Func<float, float> InCubic = EaseInCubic;
-            public static readonly Func<float, float> OutCubic = EaseOutCubic;
-            public static readonly Func<float, float> InOutCubic = EaseInOutCubic;
-            public static readonly Func<float, float> InQuart = EaseInQuart;
-            public static readonly Func<float, float> OutQuart = EaseOutQuart;
-            public static readonly Func<float, float> InOutQuart = EaseInOutQuart;
-            public static readonly Func<float, float> InQuint = EaseInQuint;
-            public static readonly Func<float, float> OutQuint = EaseOutQuint;
-            public static readonly Func<float, float> InOutQuint = EaseInOutQuint;
-            public static readonly Func<float, float> InSine = EaseInSine;
-            public static readonly Func<float, float> OutSine = EaseOutSine;
-            public static readonly Func<float, float> InOutSine = EaseInOutSine;
-            public static readonly Func<float, float> InExpo = EaseInExpo;
-            public static readonly Func<float, float> OutExpo = EaseOutExpo;
-            public static readonly Func<float, float> InOutExpo = EaseInOutExpo;
-            public static readonly Func<float, float> InCirc = EaseInCirc;
-            public static readonly Func<float, float> OutCirc = EaseOutCirc;
-            public static readonly Func<float, float> InOutCirc = EaseInOutCirc;
-            public static readonly Func<float, float> InBack = EaseInBack;
-            public static readonly Func<float, float> OutBack = EaseOutBack;
-            public static readonly Func<float, float> InOutBack = EaseInOutBack;
-            public static readonly Func<float, float> InElastic = EaseInElastic;
-            public static readonly Func<float, float> OutElastic = EaseOutElastic;
-            public static readonly Func<float, float> InOutElastic = EaseInOutElastic;
-            public static readonly Func<float, float> InBounce = EaseInBounce;
-            public static readonly Func<float, float> OutBounce = EaseOutBounce;
-            public static readonly Func<float, float> InOutBounce = EaseInOutBounce;
-        }
+        public static readonly Func<float, float> Linear = Ease.Linear;
+        public static readonly Func<float, float> InQuad = Ease.InQuad;
+        public static readonly Func<float, float> OutQuad = Ease.OutQuad;
+        public static readonly Func<float, float> InOutQuad = Ease.InOutQuad;
+        public static readonly Func<float, float> InCubic = Ease.InCubic;
+        public static readonly Func<float, float> OutCubic = Ease.OutCubic;
+        public static readonly Func<float, float> InOutCubic = Ease.InOutCubic;
+        public static readonly Func<float, float> InQuart = Ease.InQuart;
+        public static readonly Func<float, float> OutQuart = Ease.OutQuart;
+        public static readonly Func<float, float> InOutQuart = Ease.InOutQuart;
+        public static readonly Func<float, float> InQuint = Ease.InQuint;
+        public static readonly Func<float, float> OutQuint = Ease.OutQuint;
+        public static readonly Func<float, float> InOutQuint = Ease.InOutQuint;
+        public static readonly Func<float, float> InSine = Ease.InSine;
+        public static readonly Func<float, float> OutSine = Ease.OutSine;
+        public static readonly Func<float, float> InOutSine = Ease.InOutSine;
+        public static readonly Func<float, float> InExpo = Ease.InExpo;
+        public static readonly Func<float, float> OutExpo = Ease.OutExpo;
+        public static readonly Func<float, float> InOutExpo = Ease.InOutExpo;
+        public static readonly Func<float, float> InCirc = Ease.InCirc;
+        public static readonly Func<float, float> OutCirc = Ease.OutCirc;
+        public static readonly Func<float, float> InOutCirc = Ease.InOutCirc;
+        public static readonly Func<float, float> InBack = Ease.InBack;
+        public static readonly Func<float, float> OutBack = Ease.OutBack;
+        public static readonly Func<float, float> InOutBack = Ease.InOutBack;
+        public static readonly Func<float, float> InElastic = Ease.InElastic;
+        public static readonly Func<float, float> OutElastic = Ease.OutElastic;
+        public static readonly Func<float, float> InOutElastic = Ease.InOutElastic;
+        public static readonly Func<float, float> InBounce = Ease.InBounce;
+        public static readonly Func<float, float> OutBounce = Ease.OutBounce;
+        public static readonly Func<float, float> InOutBounce = Ease.InOutBounce;
 
-        const float c1 = 1.70158f;
-        const float c2 = c1 * 1.525f;
-        const float c3 = c1 + 1;
-        const float c4 = TAU / 3f;
-        const float c5 = TAU / 4.5f;
-
-        /// Flips X around x=.5; good for "yoyo".
-        public static Func<float, float> FlipX(Func<float, float> ease = default)
+        /// https://gist.github.com/Kryzarel/bba64622057f21a1d6d44879f9cd7bd4
+        public static class Ease
         {
-            ease ??= EaseLinear;
-            return (x) => ease(1 - x);
-        }
-        /// Flips Y around y=.5; good for quick & dirty switch ease in<->ease out.
-        public static Func<float, float> FlipY(Func<float, float> ease = default)
-        {
-            ease ??= EaseLinear;
-            return (x) => 1 - ease(x);
-        }
+            public static float Linear(float t) => t;
 
-        static float BounceOut(float x)
-        {
-            const float n1 = 7.5625f;
-            const float d1 = 2.75f;
-
-            if (x < 1 / d1)
+            public static float InQuad(float t) => t * t;
+            public static float OutQuad(float t) => 1 - InQuad(1 - t);
+            public static float InOutQuad(float t)
             {
-                return n1 * x * x;
+                if (t < 0.5) return InQuad(t * 2) / 2;
+                return 1 - InQuad((1 - t) * 2) / 2;
             }
-            else if (x < 2 / d1)
+
+            public static float InCubic(float t) => t * t * t;
+            public static float OutCubic(float t) => 1 - InCubic(1 - t);
+            public static float InOutCubic(float t)
             {
-                return n1 * (x -= 1.5f / d1) * x + 0.75f;
+                if (t < 0.5) return InCubic(t * 2) / 2;
+                return 1 - InCubic((1 - t) * 2) / 2;
             }
-            else if (x < 2.5 / d1)
+
+            public static float InQuart(float t) => t * t * t * t;
+            public static float OutQuart(float t) => 1 - InQuart(1 - t);
+            public static float InOutQuart(float t)
             {
-                return n1 * (x -= 2.25f / d1) * x + 0.9375f;
+                if (t < 0.5) return InQuart(t * 2) / 2;
+                return 1 - InQuart((1 - t) * 2) / 2;
             }
-            else
+
+            public static float InQuint(float t) => t * t * t * t * t;
+            public static float OutQuint(float t) => 1 - InQuint(1 - t);
+            public static float InOutQuint(float t)
             {
-                return n1 * (x -= 2.625f / d1) * x + 0.984375f;
+                if (t < 0.5) return InQuint(t * 2) / 2;
+                return 1 - InQuint((1 - t) * 2) / 2;
+            }
+
+            public static float InSine(float t) => -Cos(t * PI / 2);
+            public static float OutSine(float t) => Sin(t * PI / 2);
+            public static float InOutSine(float t) => (Cos(t * PI) - 1) / -2;
+
+            public static float InExpo(float t) => Pow(2, 10 * (t - 1));
+            public static float OutExpo(float t) => 1 - InExpo(1 - t);
+            public static float InOutExpo(float t)
+            {
+                if (t < 0.5) return InExpo(t * 2) / 2;
+                return 1 - InExpo((1 - t) * 2) / 2;
+            }
+
+            public static float InCirc(float t) => -(Sqrt(1 - t * t) - 1);
+            public static float OutCirc(float t) => 1 - InCirc(1 - t);
+            public static float InOutCirc(float t)
+            {
+                if (t < 0.5) return InCirc(t * 2) / 2;
+                return 1 - InCirc((1 - t) * 2) / 2;
+            }
+
+            public static float InElastic(float t) => 1 - OutElastic(1 - t);
+            public static float OutElastic(float t)
+            {
+                float p = 0.3f;
+                return Pow(2, -10 * t) * Sin((t - p / 4) * (2 * PI) / p) + 1;
+            }
+            public static float InOutElastic(float t)
+            {
+                if (t < 0.5) return InElastic(t * 2) / 2;
+                return 1 - InElastic((1 - t) * 2) / 2;
+            }
+
+            public static float InBack(float t)
+            {
+                float s = 1.70158f;
+                return t * t * ((s + 1) * t - s);
+            }
+            public static float OutBack(float t) => 1 - InBack(1 - t);
+            public static float InOutBack(float t)
+            {
+                if (t < 0.5) return InBack(t * 2) / 2;
+                return 1 - InBack((1 - t) * 2) / 2;
+            }
+
+            public static float InBounce(float t) => 1 - OutBounce(1 - t);
+            public static float OutBounce(float t)
+            {
+                float div = 2.75f;
+                float mult = 7.5625f;
+
+                if (t < 1 / div)
+                {
+                    return mult * t * t;
+                }
+                else if (t < 2 / div)
+                {
+                    t -= 1.5f / div;
+                    return mult * t * t + 0.75f;
+                }
+                else if (t < 2.5 / div)
+                {
+                    t -= 2.25f / div;
+                    return mult * t * t + 0.9375f;
+                }
+                else
+                {
+                    t -= 2.625f / div;
+                    return mult * t * t + 0.984375f;
+                }
+            }
+            public static float InOutBounce(float t)
+            {
+                if (t < 0.5) return InBounce(t * 2) / 2;
+                return 1 - InBounce((1 - t) * 2) / 2;
             }
         }
-
-        /// AKA identity, etc.
-        public static float EaseLinear(float x) => x;
-        public static float EaseInQuad(float x) => x * x;
-        public static float EaseOutQuad(float x) => 1 - Pow(1 - x, 2);
-        public static float EaseInOutQuad(float x) => x < 0.5f ? 2 * x * x : 1 - Pow(-2 * x + 2, 2) / 2;
-        public static float EaseInCubic(float x) => Pow(x, 3);
-        public static float EaseOutCubic(float x) => 1f - Pow(1 - x, 3);
-        public static float EaseInOutCubic(float x) => x < 0.5f ? (4 * Pow(x, 3)) : (1 - Pow(-2 * x + 2, 3) / 2);
-        public static float EaseInQuart(float x) => Pow(x, 4f);
-        public static float EaseOutQuart(float x) => 1f - Pow(1 - x, 4);
-        public static float EaseInOutQuart(float x) => x < 0.5 ? 8 * Pow(x, 4f) : 1 - Pow(-2 * x + 2, 4) / 2;
-        public static float EaseInQuint(float x) => Pow(x, 5f);
-        public static float EaseOutQuint(float x) => 1f - Pow(1f - x, 5f);
-        public static float EaseInOutQuint(float x) => x < 0.5f ? 16f * Pow(x, 5f) : 1f - Pow(-2f * x + 2f, 5f) / 2f;
-        public static float EaseInSine(float x) => 1f - Cos(HALF_PI * x);
-        public static float EaseOutSine(float x) => Sin(HALF_PI * x);
-        public static float EaseInOutSine(float x) => -(Cos(PI * x) - 1) / 2f;
-        public static float EaseInExpo(float x) => x == 0f ? 0f : Pow(2f, 10f * x - 10f);
-        public static float EaseOutExpo(float x) => x == 1f ? 1f : 1f - Pow(2f, -10f * x);
-        public static float EaseInOutExpo(float x) => x switch
-        {
-            0f => 0f,
-            1f => 1f,
-            _ => x < .5f
-                ? Pow(2f, 20f * x - 10f) / 20f
-                : (2f - Pow(2f, -20f * x + 10f) / 2f)
-        };
-        public static float EaseInCirc(float x) => 1 - Sqrt(1f - Pow(x, 2f));
-        public static float EaseOutCirc(float x) => Sqrt(1f - Pow(x - 1f, 2f));
-        public static float EaseInOutCirc(float x) => x < .5f
-            ? (1 - Sqrt(1f - Pow(x, 2f))) / 2f
-            : (Sqrt(1f - Pow(-2f * x + 2f, 2f)) + 1f) / 2f;
-
-        public static float EaseInBack(float x) => c3 * Pow(x, 3f) - c1 * Pow(x, 2f);
-        public static float EaseOutBack(float x) => 1f + c3 * Pow(x - 1f, 3f) - c1 * Pow(x - 1f, 2f);
-        public static float EaseInOutBack(float x) => x < 0.5
-                ? (Pow(2 * x, 2) * ((c2 + 1) * 2 * x - c2)) / 2
-                : (Pow(2 * x - 2, 2) * ((c2 + 1) * (x * 2 - 2) + c2) + 2) / 2;
-        public static float EaseInElastic(float x) => x switch
-        {
-            0f => 0f,
-            1f => 1f,
-            _ => -Pow(2, 10 * x - 10) * Sin((x * 10 - 10.75f) * c4)
-        };
-        public static float EaseOutElastic(float x) => x switch
-        {
-            0f => 0f,
-            1f => 1f,
-            _ => Pow(2, -10 * x) * Sin((x * 10 - 0.75f) * c4) + 1
-        };
-        public static float EaseInOutElastic(float x) => x switch
-        {
-            0f => 0f,
-            1f => 1f,
-            _ => x < .5f
-                ? -(Pow(2, 20 * x - 10) * Sin((20 * x - 11.125f) * c5)) / 2
-                : ((Pow(2, -20 * x + 10) * Sin((20 * x - 11.125f) * c5)) / 2 + 1)
-        };
-        public static float EaseInBounce(float x) => 1 - BounceOut(1 - x);
-        public static float EaseOutBounce(float x) => BounceOut(x);
-        public static float EaseInOutBounce(float x) => x < .5f
-                ? (1 - BounceOut(1 - 2 * x)) / 2
-                : (1 + BounceOut(2 * x - 1)) / 2;
     }
 }

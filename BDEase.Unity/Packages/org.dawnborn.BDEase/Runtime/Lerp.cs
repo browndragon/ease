@@ -88,7 +88,7 @@ namespace BDEase
             Action = action,
             End = end,
             Duration = duration,
-            Ease = ease ?? Easings.FuncCache.Linear,
+            Ease = ease ?? Easings.Linear,
         };
         public enum Run
         {

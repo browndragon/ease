@@ -45,32 +45,25 @@ namespace BDEase
         {
             IArith<T> arith = Arith<T>.Default;
             error = arith.Clamp(error, MaxIn);
-            if (CrossedZeroError(error, lastError)) cumulativeError = default;
-            cumulativeError = arith.Add(cumulativeError, arith.Scale(dT, error));
-            T iFactor = arith.Scale(1f / ITime, cumulativeError);
+
+            // Antiwindup:
+            // If error-dot-last is negative, then we need to turn >90deg; enough of a change to wipe cumulative error.
+            if (arith.Dot(error, lastError) <= 0f) cumulativeError = default;
+
+            // Derivative: Scale the change in error by DTime/dT.
             T dFactor = arith.Difference(error, lastError);
             dFactor = arith.Scale(DTime / dT, dFactor);
             lastError = error;
+            // Integral: update the cumulative error by error*dT; scale by ITime.
+            cumulativeError = arith.Add(cumulativeError, arith.Scale(dT, error));
+            T iFactor = arith.Scale(1f / ITime, cumulativeError);
 
             error = arith.Add(error, dFactor);
             error = arith.Add(error, iFactor);
-            error = arith.Add(error, dFactor);
             T res = arith.Scale(Gain, error);
+
             res = arith.Clamp(res, MaxOut);
             return res;
-        }
-
-        /// If the error is !~= 0, then it can't have crossed 0 (by fiat).
-        /// Otherwise, if the velocity and cumulative error are in the same(-ish) direction, it probably did!
-        /// This can be used to zero cumulative error to prevent https://en.wikipedia.org/wiki/Integral_windup.
-        bool CrossedZeroError(T error, T lastError)
-        {
-            IArith<T> arith = Arith<T>.Default;
-            // Require that error be zero:
-            if (!arith.Approximately(error)) return false;
-            // Or require that we have overshot:
-            if (arith.Dot(error, lastError) <= 0f) return false;
-            return true;
         }
 
         /// Returns a correction function given an error function.
