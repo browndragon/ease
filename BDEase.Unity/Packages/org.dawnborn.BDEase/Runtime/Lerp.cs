@@ -5,6 +5,8 @@ using UnityEngine;
 
 namespace BDEase
 {
+    /// Runs a function of ratio-of-elapsed-time on every tick until completed.
+    [Serializable]
     public struct Lerp<T> : IEnumerable<YieldInstruction>
     {
         public MonoBehaviour DefaultCoroutineStarter;
@@ -23,9 +25,7 @@ namespace BDEase
         public Func<Lerp.Run> GetRun;
         public Lerp<T> WithCancelToken(out Action cancel, Lerp.Run cancelState = Lerp.Run.End)
         {
-            Lerp.Run run = Lerp.Run.Run;
-            GetRun = () => run;
-            cancel = () => run = cancelState;
+            GetRun = Actions.MakeGetter(out cancel).Piped(Lerp.Run.Run, cancelState);
             return this;
         }
 
@@ -53,7 +53,6 @@ namespace BDEase
                 Action(arith.LerpUnclamped(Start, End, Ease.ClampInvoke(elapsed / Duration)));
                 yield return YieldInstruction;
             }
-            Debug.Log($"Out of iter state={run}");
             switch (run)
             {
                 case Lerp.Run.Run:  // Fallthrough.
@@ -72,11 +71,7 @@ namespace BDEase
         }
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-        public void StartCoroutine()
-        {
-            Debug.Log($"Starting coroutine {this}", DefaultCoroutineStarter);
-            DefaultCoroutineStarter.StartCoroutine(this.GetEnumerator());
-        }
+        public void StartCoroutine() => DefaultCoroutineStarter.StartCoroutine(this.GetEnumerator());
         public override string ToString() => $"DCS:{DefaultCoroutineStarter} YI:{YieldInstruction} Fixed?:{IsFixed} Dur:{Duration} GR:{GetRun} Ease:{Ease} Start:{Start} Action:{Action} End:{End} OnC:{OnComplete}";
     }
     public static class Lerp

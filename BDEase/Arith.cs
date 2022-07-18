@@ -1,11 +1,10 @@
 using System;
-using System.Collections.Generic;
 using System.Reflection;
 
 namespace BDEase
 {
     /// Static types & classes for doing arithmetic through generics, similar to I/EqualityComparer.
-    /// Particularly, see BDEase.Unity, where VectorX & color are supported.
+    /// Particularly, see BDEase.Unity/.../UnityArith.cs, where VectorX & color are supported.
     public interface IArith<T>
     {
         /// Returns a+b
@@ -14,16 +13,12 @@ namespace BDEase
         T Scale(float a, T b);
         /// Returns a * b.
         float Dot(T a, T b);
+        /// NaN-detector.
+        bool IsValid(T a);
     }
-    /// Marker interface; this type provides the default arithmetic
-    /// for any IArith<T> with which it's marked.
-    /// Remember to call Arith.RegisterAssembly somewhere (a static initializer from a required class?) to ensure this.
-    // Implementation note, we only handle the first such. Could be fixed.
-    public interface IDefaultArith { }
 
     /// Extension methods, constants, and type registration.
     /// Extensions generalize IArith<T> with operations implied by the existing ones (like dotproduct gets us length).
-    ///
     public static class Arith
     {
         // Used for (very fuzzy) matching.
@@ -61,8 +56,8 @@ namespace BDEase
             b = thiz.Scale(1f / len, a);
             return len;
         }
-        public static bool Approximately<T>(this IArith<T> thiz, T a) => thiz.Approximately(a, Epsilon);
         public static bool Approximately<T>(this IArith<T> thiz, T a, float epsilon) => thiz.Length2(a) < (epsilon * epsilon);
+        public static bool Approximately<T>(this IArith<T> thiz, T a) => thiz.Approximately(a, Epsilon);
         public static bool Approximately<T>(this IArith<T> thiz, T a, T b, float epsilon) => thiz.Approximately(thiz.Difference(b, a), epsilon);
         public static T Negate<T>(this IArith<T> thiz, T a) => thiz.Scale(-1f, a);
         public static T Difference<T>(this IArith<T> thiz, T a, T b) => thiz.Add(a, thiz.Negate(b));
@@ -75,54 +70,14 @@ namespace BDEase
             float dot = thiz.Dot(a, b);
             return thiz.Scale(dot / length2, b);
         }
+        public static T FirstValid<T>(this IArith<T> thiz, T a, T b) => thiz.IsValid(a) ? a : b;
         #endregion
 
-        #region Static factory registration
-        static readonly Dictionary<Type, object> registry = new();
-        /// Populates map from e.g. float->FloatArith.
-        /// We require IDefaultArith's instance ALSO implement IArith<that type>.
-        public static void RegisterDefault(Type t, IDefaultArith instance) => registry[t] = instance;
-        public static IArith<T> GetDefault<T>() => registry.TryGetValue(typeof(T), out var arith) ? (IArith<T>)arith : null;
-        public static void RegisterAssembly(Assembly assembly)
-        {
-            Type iarithDefault = typeof(IDefaultArith);
-            Type iarithG = typeof(IArith<>);
-            foreach (var t in assembly.GetTypes())
-            {
-                bool isDefault = false;
-                foreach (var i in t.GetInterfaces())
-                {
-                    if (iarithDefault.IsAssignableFrom(i))
-                    {
-                        isDefault = true;
-                        break;
-                    }
-                }
-                if (!isDefault) continue;
+        public class DefaultFor : Registry.ProvidesAttribute { public DefaultFor(Type key) : base(key) { } }
 
-                Type underlying = default;
-                foreach (var i in t.GetInterfaces())
-                {
-                    if (!i.IsGenericType) continue;
-                    Type iG = i.GetGenericTypeDefinition();
-                    if (iarithG == iG)
-                    {
-                        underlying = i.GetGenericArguments()[0];
-                        break;
-                    }
-                }
-                if (underlying != null) RegisterDefault(underlying, Activator.CreateInstance(t) as IDefaultArith);
-            }
-        }
-        static bool initialized = false;
-        static Arith() => Initialize();
-        internal static void Initialize()
-        {
-            if (initialized) return;
-            initialized = true;
-            RegisterAssembly(typeof(Arith).GetTypeInfo().Assembly);
-        }
-        #endregion
+        static internal readonly Registry registry = new();
+        static Arith() => InitializeAssemblyContaining(typeof(Arith));
+        public static void InitializeAssemblyContaining(Type type) => registry.RegisterAssemblyContaining<DefaultFor>(type);
     }
     /// VERY similar to EqualityComparer, provides the generic type dispatch through Arith<T>.Default.
     public class Arith<T> : IArith<T>
@@ -130,8 +85,7 @@ namespace BDEase
         public static IArith<T> Default { get; private set; }
         static Arith()
         {
-            Arith.Initialize();
-            Default ??= Arith.GetDefault<T>();
+            Default ??= Arith.registry.Get(typeof(T)) as IArith<T>;
             if (Default == null)
             {
                 string name = typeof(T).Name;
@@ -142,57 +96,52 @@ namespace BDEase
         T IArith<T>.Add(T a, T b) => Default.Add(a, b);
         float IArith<T>.Dot(T a, T b) => Default.Dot(a, b);
         T IArith<T>.Scale(float a, T b) => Default.Scale(a, b);
+        bool IArith<T>.IsValid(T a) => Default.IsValid(a);
     }
-    public struct IntArith : IArith<int>, IDefaultArith
+    [Arith.DefaultFor(typeof(int))]
+    public struct IntArith : IArith<int>
     {
         int IArith<int>.Add(int a, int b) => a + b;
         float IArith<int>.Dot(int a, int b) => a * b;
         int IArith<int>.Scale(float a, int b) => (int)(a * b);
+        bool IArith<int>.IsValid(int a) => false;
     }
-    public struct FloatArith : IArith<float>, IDefaultArith
+    [Arith.DefaultFor(typeof(float))]
+    public struct FloatArith : IArith<float>
     {
         float IArith<float>.Add(float a, float b) => a + b;
         float IArith<float>.Dot(float a, float b) => a * b;
         float IArith<float>.Scale(float a, float b) => a * b;
+        bool IArith<float>.IsValid(float a) => !float.IsNaN(a);
     }
 
-    /// Provides operations which suppose a circle, where 0f == TAU.
-    /// Natively prefers
-    public struct RadianArith : IArith<float>
+    /// Provides circular arithmetic (for angle measures).
+    public struct CircleArith : IArith<float>
     {
-        public static readonly float Max = Arith.TAU;
-        public static float Shortest(float a) => a <= Arith.PI ? a : (a - Arith.PI);
-        // public static float AngleClamp(float a, float max)
-        // {
-        //     if (max < 0f) return 0f;
-        //     if (max > Arith.PI) return Arith.Clamp(a, 0f, Max);
-        //     float scale = 1f;
-        //     if (a > Arith.PI)
-        //     {
-        //         scale = -1f;
-        //         a = Max - a;
-        //     }
-        //     a = Arith.Repeat(a, Arith.TAU);
-        //     a = Math.Min(a, max);
-        //     a *= scale;
-        //     a = Arith.Repeat(a, Arith.TAU);
-        //     return a;
-        // }
-        float IArith<float>.Add(float a, float b) => Arith.Repeat(a + b, Max);
-        /// This is only physically meaningful as an area or something.
-        float IArith<float>.Dot(float a, float b) => Shortest(a) * Shortest(b);
-        float IArith<float>.Scale(float a, float b) => Arith.Repeat(a * b, Max);
-    }
-    /// As RadianArith, but 0f == 360f.
-    public struct DegreeArith : IArith<float>
-    {
-        public static readonly float Max = 360f;
-        public static float Shortest(float a) => a <= 180f ? a : (a - 180f);
+        public readonly float Half;
+        public readonly float Full;
+        public CircleArith(float half, float full)
+        {
+            Half = half;
+            Full = full;
+        }
+        /// Represents left & right handed rotations of up to PI (making a circle of TAU).
+        public static readonly CircleArith PI = new(Arith.PI, Arith.TAU);
+        /// Represents right-handed rotations only, 0->TAU.
+        public static readonly CircleArith TAU = new(0f, Arith.TAU);
+        /// Represents left & right handed rotations of up to 180 (making a circle of 360).
+        public static readonly CircleArith DEGREE = new(180f, 360f);
+        /// right-handed rotations only, 0->TAU.
+        public static readonly CircleArith ABS_DEGREE = new(0f, 360f);
 
-        float IArith<float>.Add(float a, float b) => Arith.Repeat(a + b, Max);
+        /// Given a "wound up circle" that goes past +/-Tau, returns the equivalent angle.
+        public float Shortest(float a) => Arith.Repeat(Arith.Repeat(a + Half, Full) - Half, Full);
+
+        float IArith<float>.Add(float a, float b) => Shortest(a + b);
         /// This is only physically meaningful as an area or something.
-        /// And who would do that in degree-space?!
+        /// But: it's required for length to work correctly!
         float IArith<float>.Dot(float a, float b) => Shortest(a) * Shortest(b);
-        float IArith<float>.Scale(float a, float b) => Arith.Repeat(a * b, Max);
+        float IArith<float>.Scale(float a, float b) => Shortest(a * b);
+        bool IArith<float>.IsValid(float a) => !float.IsNaN(a);
     }
 }

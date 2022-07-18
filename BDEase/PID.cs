@@ -2,19 +2,20 @@ using System;
 
 namespace BDEase
 {
-    /// Produces a https://en.wikipedia.org/wiki/PID_controller .
+    /// Transforms an error value into an output adjustment via a https://en.wikipedia.org/wiki/PID_controller .
     /// This is particularly helpful for combining something like a tween with physics,
-    /// where the tween sets an ideal position (or velocity), while the output of the PID is the requested force
-    /// to be applied to the body.
+    /// where the tween sets a position or velocity, while the output of the PID is the requested force
+    /// to be applied to the body to accomplish that goal.
     [Serializable]
     public struct PID<T>
     {
-        // Construction note: PID<Vector2> depends _out_ on BDEaseUnity defining V2Arith,
+        // Construction note: PID<Vector2> (eg) depends _out_ on BDEaseUnity defining V2Arith,
         // and so in terms of initialization order, we need to try to not grab a reference to that class
         // before they've had a chance to reference Arith.Initialize() & UnityArith.Initialize().
         // Since this is likely a field on a monobehaviour and will use our own static Default, that means
         // waiting to define Arith until, say, their class' init time.
-        public readonly static PID<T> Default = new(12f, 2f, 2f, 36f, 36f);
+        // Values kind of arbitrarily chosen in V2 space with a known object optimizing for diagonal convergence time.
+        public readonly static PID<T> Default = new(7f, 100f, .075f, 120f, float.PositiveInfinity);
         /// The overall gain for this PID controller.
         public float Gain;
         /// The time the integral term takes to correct for error.
@@ -66,15 +67,15 @@ namespace BDEase
             return res;
         }
 
-        /// Returns a correction function given an error function.
-        /// This function is keyed in dT.
-        public Func<T, T> ApplyFunc(float fixedTimestep)
-        {
-            IArith<T> arith = Arith<T>.Default;
-            PID<T> thiz = this;
-            T lastError = default;
-            T cumulativeError = default;
-            return (t) => thiz.Apply(fixedTimestep, t, ref lastError, ref cumulativeError);
-        }
+        // /// Returns a correction function given an error function.
+        // /// This function is keyed in dT.
+        // public Func<T, T> ApplyFunc(float fixedTimestep)
+        // {
+        //     IArith<T> arith = Arith<T>.Default;
+        //     PID<T> thiz = this;
+        //     T lastError = default;
+        //     T cumulativeError = default;
+        //     return (t) => thiz.Apply(fixedTimestep, t, ref lastError, ref cumulativeError);
+        // }
     }
 }
