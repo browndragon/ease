@@ -92,7 +92,6 @@ namespace BDEase
             End,
             Abort
         }
-        static Lerp() => Initialize();
-        public static void Initialize() => UnityAriths.Initialize();
+        static Lerp() => UnityAriths.Initialize();
     }
 }

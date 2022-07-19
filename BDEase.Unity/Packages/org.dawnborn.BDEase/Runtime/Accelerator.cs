@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using BDEase;
+using BDUtil;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -12,13 +13,6 @@ namespace BDEase
     [Serializable]
     public struct Accelerator
     {
-        static Accelerator()
-        {
-            Lerp.Initialize();
-            Arith = Arith<Vector2>.Default;
-        }
-        static readonly IArith<Vector2> Arith;
-
         public static Accelerator Default = new(StartTargetCurve.Default, 64f, PID.Default);
         public StartTargetCurve StartTargetCurve;
         public float Velocity;
@@ -37,7 +31,8 @@ namespace BDEase
         [Serializable]
         public struct State<T>
         {
-            public static IArith<T> arith = Arith<T>.Default;
+            static State() => UnityAriths.Initialize();
+            public readonly static IArith<T> arith = Arith<T>.Default;
             public float ElapsedT;
             public float ConvergingT;
             public T PrevError;
@@ -84,6 +79,7 @@ namespace BDEase
             state.ConvergingT += dT;
             state.TargetV = default;
             state.TargetA = default;
+            if (!(state.ElapsedT >= 0f)) return Exit.Timeout;
             if (state.ConvergingT > ConvergeT) return Exit.Timeout;
             state.SetErrorX();
             state.TargetV = State<T>.arith.Scale(Velocity, StartTargetCurve.Apply(state.ElapsedT, state.ErrorX));

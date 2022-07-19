@@ -53,11 +53,11 @@ namespace BDEase
 
             // Derivative: Scale the change in error by DTime/dT.
             T dFactor = arith.Difference(error, lastError);
-            dFactor = arith.Scale(DTime / dT, dFactor);
+            dFactor = dT != 0f ? arith.Scale(DTime / dT, dFactor) : default;
             lastError = error;
             // Integral: update the cumulative error by error*dT; scale by ITime.
             cumulativeError = arith.Add(cumulativeError, arith.Scale(dT, error));
-            T iFactor = arith.Scale(1f / ITime, cumulativeError);
+            T iFactor = ITime != 0f ? arith.Scale(1f / ITime, cumulativeError) : default;
 
             error = arith.Add(error, dFactor);
             error = arith.Add(error, iFactor);
@@ -66,5 +66,15 @@ namespace BDEase
             res = arith.Clamp(res, MaxOut);
             return res;
         }
+
+        public struct State<T>
+        {
+            public T Error;
+            public T LastError;
+            public T CumulativeError;
+            public T Output;
+        }
+        public void Apply<T>(float dT, ref State<T> state)
+        => state.Output = Apply(dT, state.Error, ref state.LastError, ref state.CumulativeError);
     }
 }

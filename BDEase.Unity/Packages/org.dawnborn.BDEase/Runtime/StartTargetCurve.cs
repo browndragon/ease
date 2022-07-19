@@ -12,7 +12,7 @@ namespace BDEase
     [Serializable]
     public struct StartTargetCurve
     {
-        static StartTargetCurve() => Lerp.Initialize();
+        static StartTargetCurve() => UnityAriths.Initialize();
         public readonly static StartTargetCurve Default = new(.25f, 2f);
 
         [Tooltip("Time elapsed factor for VByT curve")]
@@ -42,8 +42,8 @@ namespace BDEase
             /// So abort now; with tiny error comes nil solution.
             if (lenX < Arith.Epsilon) return default;
             float vMag = Math.Min(
-                VByT.ClampInvoke(elapsed / StartupT),
-                VByX.ClampInvoke(lenX / BrakingX)
+                StartupT > 0f ? VByT.ClampInvoke(elapsed / StartupT) : 1f,
+                BrakingX > 0f ? VByX.ClampInvoke(lenX / BrakingX) : 1f
             );
             return arith.Scale(vMag / lenX, errorX);
         }
