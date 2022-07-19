@@ -82,6 +82,8 @@ namespace BDEase
         {
             state.ElapsedT += dT;
             state.ConvergingT += dT;
+            state.TargetV = default;
+            state.TargetA = default;
             if (state.ConvergingT > ConvergeT) return Exit.Timeout;
             state.SetErrorX();
             state.TargetV = State<T>.arith.Scale(Velocity, StartTargetCurve.Apply(state.ElapsedT, state.ErrorX));
