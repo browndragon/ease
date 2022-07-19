@@ -2,11 +2,12 @@
     "name": "org.dawnborn.bdease",
     "version": "0.0.1",
     "displayName": "Brown Dragon Ease Library",
-    "description": "Simple ease, tween, and convergence library",
+    "description": "Prototype ease, tween, and convergence library",
     "keywords": [
         "unity",
         "coroutine",
-        "ease"
+        "ease",
+        "pid"
     ],
     "unity": "2021.3",
     "documentationUrl": "https://github.com/browndragon/ease",

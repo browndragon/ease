@@ -93,18 +93,6 @@ namespace BDEase
             Abort
         }
         static Lerp() => Initialize();
-        static bool initialized = false;
-        public static void Initialize()
-        {
-            if (initialized) return;
-            initialized = true;
-            UnityAriths.Initialize();
-            System.Diagnostics.Trace.Listeners.Add(new Listener());
-        }
-        class Listener : System.Diagnostics.TraceListener
-        {
-            public override void Write(String s) => UnityEngine.Debug.Log(s);
-            public override void WriteLine(String s) => UnityEngine.Debug.Log(s);
-        }
+        public static void Initialize() => UnityAriths.Initialize();
     }
 }

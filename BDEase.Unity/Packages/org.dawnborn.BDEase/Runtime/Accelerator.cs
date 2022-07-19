@@ -1,14 +1,16 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using BDEase;
 using UnityEngine;
 using UnityEngine.Events;
 
 namespace BDEase
 {
-    [RequireComponent(typeof(Rigidbody2D))]
-    public abstract class Accelerator : MonoBehaviour
+    [Serializable]
+    public struct Accelerator
     {
         static Accelerator()
         {
@@ -17,82 +19,76 @@ namespace BDEase
         }
         static readonly IArith<Vector2> Arith;
 
-        public TargetV VByTX = TargetV.Default;
-        public bool UseAByV = true;
-        public PID<Vector2> AByV = PID<Vector2>.Default;
-        public float Timeout = 15f;
+        public static Accelerator Default = new(StartTargetCurve.Default, 64f, PID.Default);
+        public StartTargetCurve StartTargetCurve;
+        public float Velocity;
+        public PID PID;
+        public float ConvergeT;
+        public float Tolerance;
 
-        Rigidbody2D body;
-        Rigidbody2D Body => body ??= GetComponent<Rigidbody2D>();
-
-        float startT = float.NaN;
-        protected float elapsedStart => Time.fixedTime - startT;
-        float convergeT = float.NaN;
-        protected float elapsedConverge => Time.fixedTime - convergeT;
-        Vector2 lastError = default, cumError = default;
-
-        protected Vector2 targetX;
-        protected Vector2 errorX;
-        protected Vector2 targetV;
-        protected Vector2 errorV;
-        protected Vector2 targetA;
-
-        public virtual void Restart()
+        public Accelerator(StartTargetCurve targetV, float velocity, PID pid, float convergeT = 5f, float tolerance = 1e-2f)
         {
-            convergeT = float.NaN;
-            startT = Time.fixedTime;
-            lastError = default;
-            cumError = default;
+            StartTargetCurve = targetV;
+            PID = pid;
+            Velocity = velocity;
+            ConvergeT = convergeT;
+            Tolerance = tolerance;
         }
-        public virtual void BeginConverge() => convergeT = Time.fixedTime;
-        public virtual void Abort() => convergeT = float.NegativeInfinity;
-
-        protected virtual void BeforeStep() { }
-        protected virtual void AfterStep() { }
-        protected virtual void OnComplete() { }
-
-        void CallComplete()
+        [Serializable]
+        public struct State<T>
         {
-            OnComplete();
-            startT = float.NaN;
-            convergeT = float.NaN;
-            lastError = cumError = default;
-            return;
+            public static IArith<T> arith = Arith<T>.Default;
+            public float ElapsedT;
+            public float ConvergingT;
+            public T PrevError;
+            public T CumError;
+
+            public T TargetX;
+            public T ActualX;
+            public T ErrorX;
+            public void SetErrorX() => ErrorX = arith.Difference(TargetX, ActualX);
+
+            public T TargetV;
+            public T ActualV;
+            public T ErrorV;
+            public void SetErrorV() => ErrorV = arith.Difference(TargetV, ActualV);
+
+            public bool IsConverged(float tolerance) => arith.Approximately(ErrorX, tolerance) && arith.Approximately(ErrorV, tolerance);
+
+            public T TargetA;
+
+            public void Restart()
+            {
+                ElapsedT = 0f;
+                ConvergingT = float.NaN;
+                PrevError = CumError = default;
+            }
+            public void Stop()
+            {
+                Restart();
+                ElapsedT = float.NaN;
+            }
+            public bool IsStopped => !float.IsFinite(ElapsedT);
+            public void StartConverge() => ConvergingT = 0f;
+            public void Abort() => ConvergingT = float.NegativeInfinity;
         }
-
-        protected void FixedUpdate()
+        public enum Exit
         {
-            if (float.IsNaN(startT)) return;
-            float elapsedConverge = this.elapsedConverge;
-            if (elapsedConverge >= Timeout)
-            {
-                CallComplete();
-                return;
-            }
-
-            BeforeStep();
-            errorX = targetX - Body.position;
-            targetV = VByTX.Apply(elapsedStart, errorX);
-            errorV = targetV - Body.velocity;
-            if (elapsedConverge > 0f)
-            {
-                if (Arith.Approximately(errorX) && Arith.Approximately(errorV))
-                {
-                    Body.velocity = targetV;
-                    Body.position = targetX;
-                    CallComplete();
-                    return;
-                }
-            }
-            if (!UseAByV)
-            {
-                AfterStep();
-                Body.velocity = targetV;
-                return;
-            }
-            targetA = AByV.Apply(Time.fixedDeltaTime, errorV, ref lastError, ref cumError);
-            AfterStep();
-            Body.AddForce(Body.mass * targetA);
+            Run = default,
+            Timeout,
+            Converged
+        }
+        public Exit Apply<T>(float dT, ref State<T> state)
+        {
+            state.ElapsedT += dT;
+            state.ConvergingT += dT;
+            if (state.ConvergingT > ConvergeT) return Exit.Timeout;
+            state.SetErrorX();
+            state.TargetV = State<T>.arith.Scale(Velocity, StartTargetCurve.Apply(state.ElapsedT, state.ErrorX));
+            state.SetErrorV();
+            if (state.ConvergingT >= 0f && state.IsConverged(Tolerance)) return Exit.Converged;
+            state.TargetA = PID.Apply(dT, state.ErrorV, ref state.PrevError, ref state.CumError);
+            return Exit.Run;
         }
     }
 }

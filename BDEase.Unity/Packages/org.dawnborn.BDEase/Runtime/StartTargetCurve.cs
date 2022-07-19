@@ -10,13 +10,11 @@ namespace BDEase
     /// This can be used sort of like a tween directly using velocity instead of time.
     /// It *doesn't* have any state, other than elapsed time & physical position!
     [Serializable]
-    public struct TargetV
+    public struct StartTargetCurve
     {
-        static TargetV() => Lerp.Initialize();
-        public readonly static TargetV Default = new(12f, .25f, 2f);
+        static StartTargetCurve() => Lerp.Initialize();
+        public readonly static StartTargetCurve Default = new(.25f, 2f);
 
-        [Tooltip("Output Speed scaling factor")]
-        public float VScale;
         [Tooltip("Time elapsed factor for VByT curve")]
         public float StartupT;
         [Tooltip("Space from target factor for VByX curve")]
@@ -25,19 +23,13 @@ namespace BDEase
         public Easer VByT;
         /// Ease Target V by distance to target.
         public Easer VByX;
-        [Tooltip("Min space to return default")]
-        public float XMin;
-        [Tooltip("Min output to return default")]
-        public float VMin;
-        public TargetV(float vScale, float startupT, float brakingX, Easer vByT = default, Easer vByX = default, float xMin = Arith.Epsilon, float vMin = Arith.Epsilon)
+
+        public StartTargetCurve(float startupT, float brakingX, Easer vByT = default, Easer vByX = default)
         {
-            VScale = vScale;
             StartupT = startupT;
             BrakingX = brakingX;
             VByT = vByT;
             VByX = vByX;
-            XMin = xMin;
-            VMin = vMin;
         }
 
         /// Returns an ideal velocity (or whatever!) based on time elapsed & position difference target-current.
@@ -46,13 +38,13 @@ namespace BDEase
         {
             IArith<T> arith = Arith<T>.Default;
             float lenX = arith.Length(errorX);
-            /// Scaling won't help, we're just SO close.
-            if (lenX <= XMin) return default;
-            float vMag = VScale * Math.Min(
+            /// If the lenX is too small, the scaling below will go poorly.
+            /// So abort now; with tiny error comes nil solution.
+            if (lenX < Arith.Epsilon) return default;
+            float vMag = Math.Min(
                 VByT.ClampInvoke(elapsed / StartupT),
                 VByX.ClampInvoke(lenX / BrakingX)
             );
-            if (vMag <= VMin) return default;
             return arith.Scale(vMag / lenX, errorX);
         }
     }
