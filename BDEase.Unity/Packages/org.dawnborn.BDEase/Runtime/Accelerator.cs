@@ -67,6 +67,7 @@ namespace BDEase
             }
             public bool IsStopped => !float.IsFinite(ElapsedT);
             public void StartConverge() => ConvergingT = 0f;
+            public void StopConverge() => ConvergingT = float.NaN;
             public void Abort() => ConvergingT = float.NegativeInfinity;
         }
         public enum Exit
