@@ -17,14 +17,16 @@ namespace BDEase
         public StartTargetCurve StartTargetCurve;
         public float Velocity;
         public PID PID;
+        public float ElapsedT;
         public float ConvergeT;
         public float Tolerance;
 
-        public Accelerator(StartTargetCurve targetV, float velocity, PID pid, float convergeT = 5f, float tolerance = 1e-2f)
+        public Accelerator(StartTargetCurve targetV, float velocity, PID pid, float elapseT = 5f, float convergeT = 5f, float tolerance = 1e-2f)
         {
             StartTargetCurve = targetV;
             PID = pid;
             Velocity = velocity;
+            ElapsedT = elapseT;
             ConvergeT = convergeT;
             Tolerance = tolerance;
         }
@@ -79,7 +81,8 @@ namespace BDEase
             state.ConvergingT += dT;
             state.TargetV = default;
             state.TargetA = default;
-            if (!(state.ElapsedT >= 0f)) return Exit.Timeout;
+            if (!float.IsFinite(state.ElapsedT)) return Exit.Timeout;
+            if (state.ElapsedT > ElapsedT) return Exit.Timeout;
             if (state.ConvergingT > ConvergeT) return Exit.Timeout;
             state.SetErrorX();
             state.TargetV = State<T>.arith.Scale(Velocity, StartTargetCurve.Apply(state.ElapsedT, state.ErrorX));
