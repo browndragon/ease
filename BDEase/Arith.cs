@@ -3,9 +3,10 @@ using System.Reflection;
 
 namespace BDEase
 {
+    public interface IArith { }
     /// Static types & classes for doing arithmetic through generics, similar to I/EqualityComparer.
     /// Particularly, see BDEase.Unity/.../UnityArith.cs, where VectorX & color are supported.
-    public interface IArith<T>
+    public interface IArith<T> : IArith
     {
         /// Returns a+b
         T Add(T a, T b);
@@ -74,8 +75,7 @@ namespace BDEase
         #endregion
 
         public class DefaultFor : Registry.ProvidesAttribute { public DefaultFor(Type key) : base(key) { } }
-
-        static internal readonly Registry registry = new();
+        static internal readonly Registry<Type, IArith> registry = new();
         static Arith() => InitializeAssemblyContaining(typeof(Arith));
         public static void InitializeAssemblyContaining(Type type) => registry.RegisterAssemblyContaining<DefaultFor>(type);
     }

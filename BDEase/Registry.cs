@@ -1,48 +1,74 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 
 namespace BDEase
 {
-    public class Registry
+    /// Extensions, statics, etc.
+    public static class Registry
     {
+        /// Marks a type as Registrable
+        /// (though specific registries still need to RegisterByAttribute or RegisterAssemblyContaining somewhere relevant).
+        /// Requires subclasses specific to your domain to improve the odds you don't confuse your registries.
         [AttributeUsage(
             AttributeTargets.Class | AttributeTargets.Struct
             , AllowMultiple = true)]
         public abstract class ProvidesAttribute : Attribute
         {
-            internal readonly Type Key;
-            public ProvidesAttribute(Type key) => Key = key;
+            /// This would be some `TK` instead of `object` but generic attributes are a future feature.
+            /// Still, it's on you: be consistent about your registry-to-keytypes.
+            internal readonly object Key;
+            public ProvidesAttribute(object key) => Key = key;
         }
-        readonly Dictionary<Type, object> registry = new();
-        public object Get(Type t) => registry.TryGetValue(t, out var arith) ? arith : default;
+    }
+    /// A dictionary TK->TV optimized for reflective population of specific (static)
+    /// values to (single) instances of some TV (usually identified by class + 0-arg ctor).
+    public class Registry<TK, TV> : IEnumerable<KeyValuePair<TK, TV>>
+    {
+        readonly Dictionary<Type, int> typeCount = new();
+        readonly Dictionary<TK, TV> registry = new();
+        public TV Get(TK k, TV @default = default) => registry.TryGetValue(k, out var arith) ? arith : @default;
         /// Populates map from e.g. float->FloatArith.
-        /// We require IDefaultArith's instance ALSO implement IArith<that type>.
-        public void Register(Type t, object instance) => registry[t] = instance;
+        /// This is explicit; it doesn't check the typesAndAssemblies protective map.
+        public void Register(TK k, TV instance) => registry[k] = instance;
 
-        public int RegisterByAttribute<T>(Type t) where T : ProvidesAttribute
+        /// Constraint: TV must be assignablefrom T.
+        public int RegisterByAttribute<TProvides>(Type t) where TProvides : Registry.ProvidesAttribute
         {
-            int count = 0;
-            object cached = null;
-            foreach (Attribute attribute in Attribute.GetCustomAttributes(t, typeof(T)))
+            if (!typeof(TV).IsAssignableFrom(t)) return 0;
+            if (typeCount.TryGetValue(t, out int count)) return count;
+            count = 0;
+            TV cached = default;
+            foreach (Attribute attribute in Attribute.GetCustomAttributes(t, typeof(TProvides)))
             {
-                T provides = (T)attribute;
-                if (provides == null) throw new ArgumentException($"{t} not compatible with {typeof(T)}");
-                Type key = provides.Key;
-                if (cached == null) cached = Activator.CreateInstance(t);
+                TProvides provides = (TProvides)attribute;
+                if (provides == null) throw new ArgumentException($"{t} not compatible with {typeof(TProvides)}");
+                TK key = (TK)provides.Key;
+                if (cached == null) cached = (TV)Activator.CreateInstance(t);
                 Register(key, cached);
             }
+            typeCount[t] = count;
             return count;
         }
-        public int RegisterAssemblyContaining<T>(Type rootType) where T : ProvidesAttribute
+
+        public int RegisterAssemblyContaining<TProvides>(Type rootType) where TProvides : Registry.ProvidesAttribute
         {
             /// No new ones added; we already had this element:
-            if (registry.TryGetValue(rootType, out var had) && ReferenceEquals(had, rootType)) return 0;
+            if (typeCount.TryGetValue(rootType, out int count)) return count;
             Assembly assembly = rootType.Assembly;
-            int count = 0;
-            foreach (var t in assembly.GetTypes()) count += RegisterByAttribute<T>(t);
+            count = 0;
+            foreach (var t in assembly.GetTypes()) count += RegisterByAttribute<TProvides>(t);
+            typeCount[rootType] = count;
             return count;
         }
+        public int Count => registry.Count;
+        public void Clear()
+        {
+            typeCount.Clear();
+            registry.Clear();
+        }
+        public IEnumerator<KeyValuePair<TK, TV>> GetEnumerator() => registry.GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 }
