@@ -1,5 +1,9 @@
 # Ease
 
+> Warning! This is soft-deprecated; the important parts have been brought forward into https://github.com/browndragon/util .
+> I'll be deleting it shortly.
+> The core insight: everything this tried to do worked better by hand. All that's left is a little bit of easing, which I just rolled into BDUtil.Math.
+
 Unity coroutine, tween, ease, convergence lib. This is a prototype; expect changes.
 
 I highly recommend Demigiant's DOTween library if you want _good_ tweening.
